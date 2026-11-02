@@ -1,5 +1,19 @@
 <h1>Joueurs</h1>
 <?php require __DIR__ . '/nav.php'; ?>
+<?php $reqs = array_filter($list, fn($p) => !empty($p['pending_name'])); ?>
+<?php if ($reqs): ?>
+<div class="card">
+  <h2>Demandes de changement de nom</h2>
+  <?php foreach ($reqs as $p): ?>
+    <form method="post" action="<?= e(url('/admin/joueurs/' . (int)$p['id'] . '/action')) ?>" class="row" style="padding:6px 0">
+      <?= TEC\Csrf::field() ?>
+      <span><?= e($p['name']) ?> → <strong><?= e($p['pending_name']) ?></strong></span>
+      <button class="btn small primary" name="action" value="name_approve">Valider</button>
+      <button class="btn small danger" name="action" value="name_reject">Refuser</button>
+    </form>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
 <div class="card">
   <h2>Comptes</h2>
   <div class="scroll"><table>

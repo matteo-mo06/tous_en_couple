@@ -35,6 +35,7 @@ final class AdminController
         Http::render('admin/dashboard', [
             'title' => 'Administration', 'year' => $year,
             'pending' => (int)Db::val("SELECT COUNT(*) FROM entries WHERE status = 'pending'"),
+            'nameRequests' => (int)Db::val("SELECT COUNT(*) FROM players WHERE pending_name IS NOT NULL AND pending_name <> ''"),
             'players' => count(Players::all(true)),
             'amendments' => $year ? count(Amendments::forYear((int)$year['id'])) : 0,
         ]);
@@ -99,6 +100,16 @@ final class AdminController
             } else {
                 Db::update('players', ['role' => $p['role'] === 'admin' ? 'player' : 'admin'], 'id = ?', [$p['id']]);
                 Http::flash('ok', 'Rôle modifié.');
+            }
+        } elseif ($action === 'name_approve' || $action === 'name_reject') {
+            if ($p['pending_name'] === null || $p['pending_name'] === '') {
+                Http::flash('error', 'Aucune demande de nom en attente.');
+            } elseif ($action === 'name_approve') {
+                Db::update('players', ['name' => $p['pending_name'], 'pending_name' => null], 'id = ?', [$p['id']]);
+                Http::flash('ok', 'Nom modifié : « ' . $p['pending_name'] . ' ».');
+            } else {
+                Db::update('players', ['pending_name' => null], 'id = ?', [$p['id']]);
+                Http::flash('ok', 'Demande de nom refusée.');
             }
         } elseif ($action === 'reset_password') {
             $err = Players::setPassword((int)$p['id'], (string)($_POST['password'] ?? ''), true);

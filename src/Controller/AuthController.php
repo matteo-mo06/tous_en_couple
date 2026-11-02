@@ -5,6 +5,7 @@ namespace TEC\Controller;
 
 use TEC\Auth;
 use TEC\Csrf;
+use TEC\Db;
 use TEC\Http;
 use TEC\Repo\Players;
 
@@ -62,10 +63,21 @@ final class AuthController
             Http::flash('error', 'Choisis un mot de passe différent de l\'ancien.');
             Http::redirect('/mot-de-passe');
         }
+        $wanted = preg_replace('/\s+/u', ' ', Http::post('name'));
+        $nameAsked = $u['must_change'] && $wanted !== '' && $wanted !== $u['name'];
+        if ($nameAsked && mb_strlen($wanted) > 60) {
+            Http::flash('error', 'Le nom est trop long (60 caractères maximum).');
+            Http::redirect('/mot-de-passe');
+        }
         $err = Players::setPassword((int)$u['id'], $new, false);
         if ($err) {
             Http::flash('error', $err);
             Http::redirect('/mot-de-passe');
+        }
+        if ($nameAsked) {
+            Db::update('players', ['pending_name' => $wanted], 'id = ?', [$u['id']]);
+            Http::flash('ok', 'Mot de passe changé. Ta demande de nom « ' . $wanted . ' » sera appliquée une fois validée par l\'administrateur.');
+            Http::redirect('/');
         }
         Http::flash('ok', 'Mot de passe changé.');
         Http::redirect('/');

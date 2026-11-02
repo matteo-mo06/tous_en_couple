@@ -5,6 +5,7 @@
     <h2>À traiter</h2>
     <p class="hero"><?= (int)$pending ?></p>
     <p>déclaration(s) en attente de validation</p>
+    <?php if ($nameRequests): ?><p><?= (int)$nameRequests ?> demande(s) de changement de nom · <a href="<?= e(url('/admin/joueurs')) ?>">voir</a></p><?php endif; ?>
     <p><a class="btn primary" href="<?= e(url('/admin/entrees')) ?>">Ouvrir</a></p>
   </div>
   <div class="card">

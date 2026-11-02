@@ -17,7 +17,7 @@ $path = TEC\Http::path();
 <body>
 <header class="site">
   <div class="wrap">
-    <a class="brand" href="<?= e(url('/')) ?>">💍 <?= e(TEC\Config::get('app.name')) ?></a>
+    <a class="brand" href="<?= e(url('/')) ?>"><span class="ring">💍</span><span><?= e(TEC\Config::get('app.name')) ?></span></a>
     <?php if ($_user): ?>
       <nav class="main">
         <?php foreach ($nav as $href => $label): ?>
@@ -28,7 +28,7 @@ $path = TEC\Http::path();
         <?php endif; ?>
       </nav>
       <div class="who">
-        <span><?= e($_user['name']) ?></span>
+        <span class="name"><?= e($_user['name']) ?></span>
         <form method="post" action="<?= e(url('/deconnexion')) ?>"><?= TEC\Csrf::field() ?><button class="btn small" type="submit">Déconnexion</button></form>
       </div>
     <?php endif; ?>
@@ -36,12 +36,16 @@ $path = TEC\Http::path();
 </header>
 <main>
   <div class="wrap">
-    <?php foreach ($_flash as $f): ?>
-      <div class="flash <?= e($f['type']) ?>"><?= e($f['msg']) ?></div>
-    <?php endforeach; ?>
     <?= $content ?>
   </div>
 </main>
+<?php if ($_flash): ?>
+<div class="toasts" role="status" aria-live="polite">
+  <?php foreach ($_flash as $f): ?>
+    <div class="toast <?= e($f['type']) ?>"><span><?= e($f['msg']) ?></span><button type="button" aria-label="Fermer">×</button></div>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
 <script src="<?= e(url('/js/app.js')) ?>" defer></script>
 </body>
 </html>
