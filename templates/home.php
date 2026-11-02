@@ -7,14 +7,12 @@
     <?php else: ?>
       <p class="hero"><?= (int)$year['year'] ?></p>
       <dl class="kv">
-        <dt>État</dt><dd><?= e(TEC\Labels::YEAR_STATUS[$year['status']]) ?></dd>
-        <dt>Réunion</dt><dd><?= fr_date($year['meeting_date']) ?><?= $year['meeting_place'] ? ' — ' . e($year['meeting_place']) : '' ?></dd>
-        <dt>Hôte</dt><dd><?= $host ? e($host) : '<span class="muted">pas encore désigné</span>' ?></dd>
+        <dt><?= icon("info") ?>État</dt><dd><?= e(TEC\Labels::YEAR_STATUS[$year['status']]) ?></dd>
+        <dt><?= icon("calendar") ?>Réunion</dt><dd><?= fr_date($year['meeting_date']) ?><?= $year['meeting_place'] ? ' — ' . e($year['meeting_place']) : '' ?></dd>
+        <dt><?= icon("crown") ?>Hôte</dt><dd><?= $host ? e($host) : '<span class="muted">pas encore désigné</span>' ?></dd>
       </dl>
       <?php if ($year['status'] === 'soiree'): ?>
         <p><a class="btn primary" href="<?= e(url('/soiree')) ?>">Rejoindre la soirée</a></p>
-      <?php elseif ($year['status'] === 'open'): ?>
-        <p><a class="btn" href="<?= e(url('/moi')) ?>">Mes déclarations</a></p>
       <?php endif; ?>
       <?php if ($amendWindow && $amendWindow['open']): ?>
         <p class="small">Les amendements sont ouverts<?= $amendWindow['to'] ? ' jusqu\'au ' . fr_date($amendWindow['to']) : '' ?> : <a href="<?= e(url('/amendements')) ?>">proposer ou voter</a>.</p>
@@ -25,7 +23,7 @@
   <div class="card">
     <h2>Mon statut</h2>
     <p><?php $s = $me; require __DIR__ . '/partials/status.php'; ?></p>
-    <p><a href="<?= e(url('/moi')) ?>">Mes déclarations</a></p>
+    <p><a class="btn" href="<?= e(url('/moi')) ?>">Mes déclarations</a></p>
   </div>
 </div>
 

@@ -1,5 +1,5 @@
 <h1>Mon espace</h1>
-<div class="grid">
+<div class="grid top">
   <div class="card">
     <h2>Mon statut actuel</h2>
     <p><?php $s = $status; require __DIR__ . '/partials/status.php'; ?></p>

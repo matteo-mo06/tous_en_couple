@@ -36,7 +36,7 @@
   <div class="card">
     <h2>Cadeau global</h2>
     <?php if ($c['cycle']): ?>
-      <p>🎁 <?= e(implode(' et ', array_map(fn($id) => $c['names'][$id], $c['cycle']['winners']))) ?></p>
+      <p><?= icon("gift", "inline") ?> <?= e(implode(' et ', array_map(fn($id) => $c['names'][$id], $c['cycle']['winners']))) ?></p>
     <?php else: ?><p class="muted">Pas cette année.</p><?php endif; ?>
   </div>
 </div>

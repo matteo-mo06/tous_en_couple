@@ -40,7 +40,7 @@
     <div class="card">
       <h2>Cadeau global (tous les 3 ans)</h2>
       <?php if ($cycle): ?>
-        <p>🎁 <?= e(implode(' et ', array_map(fn($id) => $players[(int)$id]['name'] ?? '?', $cycle))) ?> reçoit<?= count($cycle) > 1 ? 'ent' : '' ?> le cadeau commun des autres joueurs.</p>
+        <p><?= icon("gift", "inline") ?> <?= e(implode(' et ', array_map(fn($id) => $players[(int)$id]['name'] ?? '?', $cycle))) ?> reçoit<?= count($cycle) > 1 ? 'ent' : '' ?> le cadeau commun des autres joueurs.</p>
       <?php else: ?>
         <p class="muted">Pas de cadeau global cette année-là.</p>
       <?php endif; ?>

@@ -15,6 +15,7 @@ La commande affiche un mot de passe provisoire (à changer à la première conne
 php -S localhost:8000 -t public public/index.php
 ```
 Données de démonstration (base vide seulement) : `php bin/seed-demo.php` (mot de passe `demo-demo`).
+Joueurs fictifs (Indy, Narciso, Romane, Cali, mot de passe `test-test`) avec déclarations aléatoires : `php bin/seed-test.php` ; avec `--cloturer`, la soirée est simulée et l'année clôturée (classements, historique). Base de test uniquement.
 Tests : `php tests/run.php`
 
 ## Déploiement (hébergement classique)

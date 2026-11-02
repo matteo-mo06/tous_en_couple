@@ -1,4 +1,4 @@
-<div class="card" style="max-width:420px;margin:40px auto">
+<div class="card narrow">
   <h1>Connexion</h1>
   <form method="post" action="<?= e(url('/connexion')) ?>">
     <?= TEC\Csrf::field() ?>

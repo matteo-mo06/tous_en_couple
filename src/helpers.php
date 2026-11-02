@@ -66,3 +66,9 @@ function json_decode_array(?string $json): array
     $v = $json ? json_decode($json, true) : null;
     return is_array($v) ? $v : [];
 }
+
+/** Icône SVG (définie dans le sprite de templates/partials/icons.php). */
+function icon(string $name, string $class = ''): string
+{
+    return '<svg class="i' . ($class !== '' ? ' ' . e($class) : '') . '" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"/></svg>';
+}

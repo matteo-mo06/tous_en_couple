@@ -18,7 +18,7 @@
     </select>
     <p><button class="btn primary" type="submit">Enregistrer</button></p>
   </form>
-  <form method="post" action="<?= e(url('/admin/annee/ouvrir-soiree')) ?>" class="row">
+  <form method="post" action="<?= e(url('/admin/annee/ouvrir-soiree')) ?>" class="actions">
     <?= TEC\Csrf::field() ?>
     <button class="btn" name="action" value="draw_host">Tirer l'hôte au sort</button>
     <?php if ($year['status'] === 'open'): ?>

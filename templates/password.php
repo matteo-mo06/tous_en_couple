@@ -1,4 +1,4 @@
-<div class="card" style="max-width:480px">
+<div class="card narrow">
   <h1>Mot de passe</h1>
   <?php if ($_user['must_change']): ?><p class="muted">Ton mot de passe est provisoire : choisis le tien.</p><?php endif; ?>
   <form method="post" action="<?= e(url('/mot-de-passe')) ?>">

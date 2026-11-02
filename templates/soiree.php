@@ -13,7 +13,7 @@
     <?php foreach ($others as $p): $on = in_array((int)$p['player_id'], $mine, true); ?>
       <form method="post" action="<?= e(url('/soiree/accuser')) ?>" style="display:inline-block;margin:4px 6px 4px 0">
         <?= TEC\Csrf::field() ?><input type="hidden" name="target" value="<?= (int)$p['player_id'] ?>">
-        <button class="btn <?= $on ? 'on' : '' ?>" type="submit"><?= $on ? '🔎 Je soupçonne ' : '' ?><?= e($p['name']) ?></button>
+        <button class="btn <?= $on ? 'on' : '' ?>" type="submit"><?= $on ? 'Je soupçonne ' : '' ?><?= e($p['name']) ?></button>
       </form>
     <?php endforeach; ?>
     <p class="small"><?= count($mine) ?> accusation(s) en cours.</p>
@@ -77,7 +77,7 @@
             <?php endforeach; ?>
           </select>
           <button class="btn small" type="submit">Voter</button>
-          <?php if ($pz['winner_id']): ?><span class="small">🏆 <?= e($players[(int)$pz['winner_id']]['name'] ?? '?') ?></span><?php endif; ?>
+          <?php if ($pz['winner_id']): ?><span class="small"><?= icon("trophy", "inline") ?> <?= e($players[(int)$pz['winner_id']]['name'] ?? '?') ?></span><?php endif; ?>
         </div>
       </form>
     <?php endforeach; ?>
