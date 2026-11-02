@@ -49,6 +49,7 @@ $asset = fn(string $f) => url($f) . '?v=' . (@filemtime(dirname(__DIR__) . '/pub
     <?= $content ?>
   </div>
 </main>
+<?php if ($_user): ?><footer class="foot"><a href="<?= e(url('/contrat')) ?>">Contrat</a></footer><?php endif; ?>
 <?php if ($_flash): ?>
 <div class="toasts" role="status" aria-live="polite">
   <?php foreach ($_flash as $f): ?>

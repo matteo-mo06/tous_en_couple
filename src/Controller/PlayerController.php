@@ -44,6 +44,12 @@ final class PlayerController
         return null;
     }
 
+    public static function contract(): void
+    {
+        Auth::requireLogin();
+        Http::render('contract', ['title' => 'Contrat']);
+    }
+
     public static function home(): void
     {
         $u = Auth::requireLogin();

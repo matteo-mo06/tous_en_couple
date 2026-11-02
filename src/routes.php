@@ -29,6 +29,7 @@ $router->post('/journal/{id}/supprimer', [Journal::class, 'delete']);
 $router->get('/rewind', [Journal::class, 'rewind']);
 $router->get('/parametres', [Player::class, 'settings']);
 $router->post('/parametres', [Player::class, 'saveSettings']);
+$router->get('/contrat', [Player::class, 'contract']);
 $router->get('/joueurs', [Player::class, 'players']);
 $router->get('/classement', [Player::class, 'ranking']);
 $router->get('/historique', [Player::class, 'history']);
