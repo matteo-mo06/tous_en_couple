@@ -5,6 +5,8 @@ $nav = [
     '/historique' => 'Historique', '/soiree' => 'Soirée', '/amendements' => 'Amendements',
 ];
 $path = TEC\Http::path();
+// Version = date de modification du fichier : le navigateur recharge dès qu'un fichier change.
+$asset = fn(string $f) => url($f) . '?v=' . (@filemtime(dirname(__DIR__) . '/public' . $f) ?: 0);
 ?><!doctype html>
 <html lang="fr">
 <head>
@@ -12,8 +14,8 @@ $path = TEC\Http::path();
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title><?= e($title) ?> — <?= e(TEC\Config::get('app.name')) ?></title>
-  <link rel="stylesheet" href="<?= e(url('/css/app.css')) ?>">
-  <script src="<?= e(url('/js/theme.js')) ?>"></script>
+  <link rel="stylesheet" href="<?= e($asset('/css/app.css')) ?>">
+  <script src="<?= e($asset('/js/theme.js')) ?>"></script>
 </head>
 <body>
 <header class="site">
@@ -48,6 +50,6 @@ $path = TEC\Http::path();
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
-<script src="<?= e(url('/js/app.js')) ?>" defer></script>
+<script src="<?= e($asset('/js/app.js')) ?>" defer></script>
 </body>
 </html>
