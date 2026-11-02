@@ -1,0 +1,4 @@
+<?php $p = TEC\Http::path(); $items = ['/admin' => 'Tableau de bord', '/admin/entrees' => 'Déclarations', '/admin/annee' => 'Année', '/admin/soiree' => 'Soirée', '/admin/cloture' => 'Clôture', '/admin/joueurs' => 'Joueurs', '/admin/bareme' => 'Barème']; ?>
+<div class="row" style="margin-bottom:14px">
+  <?php foreach ($items as $h => $l): ?><a class="btn small <?= $p === $h ? 'on' : '' ?>" href="<?= e(url($h)) ?>"><?= e($l) ?></a><?php endforeach; ?>
+</div>

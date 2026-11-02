@@ -1,0 +1,8 @@
+# Hébergement Apache classique : toutes les URL passent par index.php
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+
+# Pas de listing de dossiers
+Options -Indexes
