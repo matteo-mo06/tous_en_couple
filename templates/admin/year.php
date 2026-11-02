@@ -27,6 +27,6 @@
       <button class="btn" name="action" value="reopen">Rouvrir les déclarations</button>
     <?php endif; ?>
   </form>
-  <p class="small muted">Ouvrir la soirée ferme les déclarations des joueurs. Tu peux encore saisir pour eux dans « Déclarations ».</p>
+  <p class="small muted">Ouvrir la soirée ferme les déclarations des joueurs (que tu ne peux pas consulter : elles ne se révèlent qu'à la soirée).</p>
 </div>
 <?php endif; ?>

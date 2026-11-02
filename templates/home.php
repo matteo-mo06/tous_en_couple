@@ -1,8 +1,4 @@
 <h1>Accueil</h1>
-<?php if ($pendingAll): ?>
-  <div class="flash info"><a href="<?= e(url('/admin/entrees')) ?>"><?= (int)$pendingAll ?> déclaration(s) à valider</a></div>
-<?php endif; ?>
-
 <div class="grid">
   <div class="card">
     <h2>Cette année</h2>
@@ -18,7 +14,7 @@
       <?php if ($year['status'] === 'soiree'): ?>
         <p><a class="btn primary" href="<?= e(url('/soiree')) ?>">Rejoindre la soirée</a></p>
       <?php elseif ($year['status'] === 'open'): ?>
-        <p><a class="btn" href="<?= e(url('/moi')) ?>">Mes déclarations<?= $pendingMine ? ' (' . (int)$pendingMine . ' en attente)' : '' ?></a></p>
+        <p><a class="btn" href="<?= e(url('/moi')) ?>">Mes déclarations</a></p>
       <?php endif; ?>
       <?php if ($amendWindow && $amendWindow['open']): ?>
         <p class="small">Les amendements sont ouverts<?= $amendWindow['to'] ? ' jusqu\'au ' . fr_date($amendWindow['to']) : '' ?> : <a href="<?= e(url('/amendements')) ?>">proposer ou voter</a>.</p>
@@ -29,7 +25,7 @@
   <div class="card">
     <h2>Mon statut</h2>
     <p><?php $s = $me; require __DIR__ . '/partials/status.php'; ?></p>
-    <p><a href="<?= e(url('/moi')) ?>">Mettre à jour dans mon espace</a></p>
+    <p><a href="<?= e(url('/moi')) ?>">Mes déclarations</a></p>
   </div>
 </div>
 

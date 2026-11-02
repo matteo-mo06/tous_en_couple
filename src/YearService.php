@@ -125,10 +125,6 @@ final class YearService
             ];
         }
 
-        $pending = Db::val("SELECT COUNT(*) FROM entries WHERE year_id = ? AND status = 'pending'", [$yearId]);
-        if ($pending) {
-            $problems[] = "$pending déclaration(s) en attente de validation.";
-        }
         if (!$year['host_id']) {
             $warnings[] = 'Aucun hôte désigné : personne ne recevra le bonus d\'hôte.';
         }

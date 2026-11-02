@@ -5,7 +5,10 @@ namespace TEC\Repo;
 
 use TEC\Db;
 
-/** Déclarations des joueurs (relation, étapes, ruptures, bluff...) et leur validation. */
+/**
+ * Déclarations des joueurs (relation, étapes, ruptures, bluff...). Elles sont effectives dès l'envoi (aucune validation
+ * par l'administrateur) et ne sont visibles que de leur auteur : l'administrateur est un joueur comme les autres.
+ */
 final class Entries
 {
     public const TYPES = [
@@ -29,9 +32,8 @@ final class Entries
     public const ATTEMPTS = [
         'app' => 'Compte actif sur une application de rencontre', 'date' => 'Rendez-vous',
         'activity' => 'Activité pour rencontrer du monde', 'setup' => 'Rencontre arrangée par un ami',
+        'other' => 'Autre (à décrire)',
     ];
-    /** Types que seul l'administrateur peut saisir pour un autre joueur (signalements). */
-    public const PRIVATE_TYPES = ['bluff'];
 
     public static function find(int $id): ?array
     {
@@ -86,7 +88,11 @@ final class Entries
                 if (!isset(self::ATTEMPTS[$kind])) {
                     return [null, 'Choisis le type de tentative.'];
                 }
-                return [['kind' => $kind, 'date' => $s('date')], null];
+                $detail = mb_substr($s('detail'), 0, 300);
+                if ($kind === 'other' && $detail === '') {
+                    return [null, 'Décris ta tentative.'];
+                }
+                return [['kind' => $kind, 'detail' => $detail, 'date' => $s('date')], null];
             case 'absence':
                 if ($s('reason') === '') {
                     return [null, 'Indique le motif de l\'absence.'];
@@ -97,60 +103,39 @@ final class Entries
     }
 
     /**
-     * Crée une entrée. Un joueur crée en « pending » ; l'administrateur peut valider tout de suite.
+     * Crée une déclaration, effective tout de suite. Seul son auteur la voit jusqu'à la soirée.
      * @return array [id|null, erreur|null]
      */
-    public static function create(int $yearId, int $playerId, string $type, array $input, int $createdBy, bool $approve = false): array
+    public static function create(int $yearId, int $playerId, string $type, array $input): array
     {
         [$data, $err] = self::validate($type, $input);
         if ($err !== null) {
             return [null, $err];
         }
-        // Une seule déclaration active de ces types par joueur et par année
+        // Une seule déclaration de ces types par joueur et par année
         if (in_array($type, ['bluff', 'attempt', 'absence'], true)) {
-            $n = (int)Db::val(
-                "SELECT COUNT(*) FROM entries WHERE year_id = ? AND player_id = ? AND type = ? AND status <> 'rejected'",
-                [$yearId, $playerId, $type]
-            );
+            $n = (int)Db::val('SELECT COUNT(*) FROM entries WHERE year_id = ? AND player_id = ? AND type = ?', [$yearId, $playerId, $type]);
             if ($n > 0) {
-                return [null, 'Il y a déjà une déclaration de ce type pour cette année (' . self::TYPES[$type] . ').'];
+                return [null, 'Tu as déjà fait cette déclaration pour cette année (' . self::TYPES[$type] . '). Retire-la d\'abord pour la refaire.'];
             }
         }
         $id = Db::insert('entries', [
             'year_id' => $yearId, 'player_id' => $playerId, 'type' => $type,
-            'data' => json_encode($data, JSON_UNESCAPED_UNICODE), 'status' => $approve ? 'approved' : 'pending',
-            'created_by' => $createdBy, 'created_at' => now(),
-            'decided_by' => $approve ? $createdBy : null, 'decided_at' => $approve ? now() : null,
+            'data' => json_encode($data, JSON_UNESCAPED_UNICODE), 'status' => 'approved',
+            'created_by' => $playerId, 'created_at' => now(), 'decided_by' => null, 'decided_at' => null,
         ]);
-        self::log($id, $createdBy, $createdBy === $playerId ? 'created' : 'created_for', null);
-        if ($approve) {
-            self::log($id, $createdBy, 'approved', 'Saisie directe par l\'administrateur');
-        }
         return [$id, null];
     }
 
-    public static function decide(int $id, string $status, ?string $note, int $actorId): ?string
-    {
-        if (!in_array($status, ['approved', 'rejected'], true)) {
-            return 'Décision inconnue.';
-        }
-        $e = self::find($id);
-        if (!$e) {
-            return 'Déclaration introuvable.';
-        }
-        if ($status === 'rejected' && trim((string)$note) === '') {
-            return 'Indique un motif de refus (le joueur le verra).';
-        }
-        Db::update('entries', ['status' => $status, 'decision_note' => $note ?: null, 'decided_by' => $actorId, 'decided_at' => now()], 'id = ?', [$id]);
-        self::log($id, $actorId, $status, $note);
-        return null;
-    }
-
-    /** Un joueur peut retirer une déclaration tant qu'elle n'est pas validée. */
+    /** Un joueur peut retirer l'une de ses déclarations tant que la soirée n'a pas commencé. */
     public static function withdraw(int $id, int $playerId): bool
     {
         $e = self::find($id);
-        if (!$e || (int)$e['player_id'] !== $playerId || $e['status'] !== 'pending') {
+        if (!$e || (int)$e['player_id'] !== $playerId) {
+            return false;
+        }
+        $year = Years::find((int)$e['year_id']);
+        if (!$year || $year['status'] !== 'open') {
             return false;
         }
         Db::run('DELETE FROM entries WHERE id = ?', [$id]);
@@ -158,27 +143,9 @@ final class Entries
         return true;
     }
 
-    public static function log(int $entryId, int $actorId, string $action, ?string $note): void
-    {
-        Db::insert('entry_log', ['entry_id' => $entryId, 'actor_id' => $actorId, 'action' => $action, 'note' => $note, 'created_at' => now()]);
-    }
-
-    public static function logFor(int $entryId): array
-    {
-        return Db::all('SELECT l.*, p.name AS actor FROM entry_log l JOIN players p ON p.id = l.actor_id WHERE l.entry_id = ? ORDER BY l.id', [$entryId]);
-    }
-
     public static function forPlayer(int $yearId, int $playerId): array
     {
         return self::decode(Db::all('SELECT * FROM entries WHERE year_id = ? AND player_id = ? ORDER BY id DESC', [$yearId, $playerId]));
-    }
-
-    public static function pending(): array
-    {
-        return self::decode(Db::all(
-            "SELECT e.*, p.name AS player_name FROM entries e JOIN players p ON p.id = e.player_id
-             WHERE e.status = 'pending' ORDER BY e.id"
-        ));
     }
 
     public static function forYear(int $yearId, ?string $status = null): array
@@ -221,7 +188,8 @@ final class Entries
             case 'bluff':
                 return 'Bluff avec « ' . ($d['fake_partner'] ?? '?') . ' »';
             case 'attempt':
-                return self::ATTEMPTS[$d['kind'] ?? ''] ?? '?';
+                $label = ($d['kind'] ?? '') === 'other' ? 'Tentative' : (self::ATTEMPTS[$d['kind'] ?? ''] ?? '?');
+                return $label . (!empty($d['detail']) ? ' : ' . $d['detail'] : '');
             case 'absence':
                 return 'Absence : ' . ($d['reason'] ?? '');
         }

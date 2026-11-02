@@ -80,6 +80,6 @@ final class AuthController
             Http::redirect('/');
         }
         Http::flash('ok', 'Mot de passe changé.');
-        Http::redirect('/');
+        Http::redirect($u['must_change'] ? '/' : '/parametres');
     }
 }

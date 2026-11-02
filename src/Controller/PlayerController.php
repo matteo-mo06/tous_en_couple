@@ -15,18 +15,21 @@ use TEC\Repo\Years;
 
 final class PlayerController
 {
-    /** Dernier statut connu d'un joueur : dernière relation validée, sinon l'état de la dernière année clôturée. */
-    public static function lastStatus(int $playerId): ?array
+    /**
+     * Statut d'un joueur. Pour les autres : celui de la dernière réunion clôturée (public). Pour soi ($own) : sa dernière
+     * déclaration, même de l'année en cours. Les déclarations en cours ne sont jamais montrées aux autres.
+     */
+    public static function lastStatus(int $playerId, bool $own = false): ?array
     {
-        $e = Db::one(
+        $e = $own ? Db::one(
             "SELECT e.*, gy.year FROM entries e JOIN game_years gy ON gy.id = e.year_id
-             WHERE e.player_id = ? AND e.type = 'relation' AND e.status = 'approved' ORDER BY e.id DESC LIMIT 1",
+             WHERE e.player_id = ? AND e.type = 'relation' ORDER BY e.id DESC LIMIT 1",
             [$playerId]
-        );
+        ) : null;
         if ($e) {
             $d = json_decode_array($e['data']);
             return ['status' => $d['status'], 'partner' => $d['partner'] ?? null, 'far' => !empty($d['far']),
-                'since' => $e['decided_at'], 'year' => (int)$e['year'], 'series' => null];
+                'since' => $e['created_at'], 'year' => (int)$e['year'], 'series' => null];
         }
         $r = Db::one(
             'SELECT yr.state, gy.year FROM year_results yr JOIN game_years gy ON gy.id = yr.year_id
@@ -61,13 +64,10 @@ final class PlayerController
                 }
             }
         }
-        $pendingMine = $year ? (int)Db::val("SELECT COUNT(*) FROM entries WHERE year_id = ? AND player_id = ? AND status = 'pending'", [$year['id'], $u['id']]) : 0;
-        $pendingAll = Auth::isAdmin() ? (int)Db::val("SELECT COUNT(*) FROM entries WHERE status = 'pending'") : 0;
         Http::render('home', [
             'title' => 'Accueil', 'year' => $year, 'last' => $last, 'players' => $players, 'ranking' => $ranking,
-            'globalRank' => $globalRank, 'absences' => $absences, 'me' => self::lastStatus((int)$u['id']),
+            'globalRank' => $globalRank, 'absences' => $absences, 'me' => self::lastStatus((int)$u['id'], true),
             'host' => ($year && $year['host_id']) ? ($players[(int)$year['host_id']]['name'] ?? null) : null,
-            'pendingMine' => $pendingMine, 'pendingAll' => $pendingAll,
             'amendWindow' => $year ? Amendments::window($year) : null,
         ]);
     }
@@ -77,12 +77,9 @@ final class PlayerController
         $u = Auth::requireLogin();
         $year = Years::current();
         $entries = $year ? Entries::forPlayer((int)$year['id'], (int)$u['id']) : [];
-        foreach ($entries as &$e) {
-            $e['log'] = Entries::logFor((int)$e['id']);
-        }
         Http::render('me', [
-            'title' => 'Mon espace', 'year' => $year, 'entries' => $entries, 'status' => self::lastStatus((int)$u['id']),
-            'canAdd' => $year && ($year['status'] === 'open' || Auth::isAdmin()),
+            'title' => 'Mon espace', 'year' => $year, 'entries' => $entries, 'status' => self::lastStatus((int)$u['id'], true),
+            'canAdd' => $year && $year['status'] === 'open',
         ]);
     }
 
@@ -91,7 +88,7 @@ final class PlayerController
         $u = Auth::requireLogin();
         Csrf::check();
         $year = Years::current();
-        if (!$year || ($year['status'] !== 'open' && !Auth::isAdmin())) {
+        if (!$year || $year['status'] !== 'open') {
             Http::flash('error', 'Les déclarations sont fermées pour cette année.');
             Http::redirect('/moi');
         }
@@ -100,8 +97,8 @@ final class PlayerController
             Http::flash('error', 'Type de déclaration inconnu.');
             Http::redirect('/moi');
         }
-        [$id, $err] = Entries::create((int)$year['id'], (int)$u['id'], $type, $_POST, (int)$u['id']);
-        Http::flash($err ? 'error' : 'ok', $err ?: 'Déclaration envoyée : elle sera visible une fois validée par l\'administrateur.');
+        [$id, $err] = Entries::create((int)$year['id'], (int)$u['id'], $type, $_POST);
+        Http::flash($err ? 'error' : 'ok', $err ?: 'Déclaration enregistrée. Toi seul peux la voir jusqu\'à la soirée.');
         Http::redirect('/moi');
     }
 
@@ -110,17 +107,52 @@ final class PlayerController
         $u = Auth::requireLogin();
         Csrf::check();
         $ok = Entries::withdraw((int)$id, (int)$u['id']);
-        Http::flash($ok ? 'ok' : 'error', $ok ? 'Déclaration retirée.' : 'Impossible : elle est déjà traitée ou ne t\'appartient pas.');
+        Http::flash($ok ? 'ok' : 'error', $ok ? 'Déclaration retirée.' : 'Impossible : la soirée a commencé ou la déclaration ne t\'appartient pas.');
         Http::redirect('/moi');
     }
 
-    public static function saveProfile(): void
+    public static function settings(): void
+    {
+        $u = Auth::requireLogin();
+        Http::render('settings', ['title' => 'Paramètres', 'u' => $u]);
+    }
+
+    /** Nom (soumis à validation de l'administrateur), identifiant et lieu de vie. */
+    public static function saveSettings(): void
     {
         $u = Auth::requireLogin();
         Csrf::check();
-        Db::update('players', ['home_place' => mb_substr(Http::post('home_place'), 0, 190) ?: null], 'id = ?', [$u['id']]);
-        Http::flash('ok', 'Lieu de vie enregistré.');
-        Http::redirect('/moi');
+        $name = trim((string)preg_replace('/\s+/u', ' ', Http::post('name')));
+        $login = mb_strtolower(Http::post('login'));
+        $place = mb_substr(Http::post('home_place'), 0, 190);
+        $msgs = [];
+        $upd = ['home_place' => $place ?: null];
+        if ($name !== '' && $name !== $u['name'] && $name !== ($u['pending_name'] ?? '')) {
+            if (mb_strlen($name) > 60) {
+                Http::flash('error', 'Le nom est trop long (60 caractères maximum).');
+                Http::redirect('/parametres');
+            }
+            $upd['pending_name'] = $name;
+            $msgs[] = 'Demande de nom « ' . $name . ' » envoyée à l\'administrateur.';
+        } elseif ($name === $u['name'] && !empty($u['pending_name'])) {
+            $upd['pending_name'] = null;
+            $msgs[] = 'Demande de nom annulée.';
+        }
+        if ($login !== '' && $login !== $u['login']) {
+            if (!preg_match('/^[a-z0-9._-]{2,40}$/', $login)) {
+                Http::flash('error', 'Identifiant : 2 à 40 caractères parmi lettres minuscules, chiffres, point, tiret.');
+                Http::redirect('/parametres');
+            }
+            if (Db::one('SELECT id FROM players WHERE login = ? AND id <> ?', [$login, $u['id']])) {
+                Http::flash('error', 'Cet identifiant est déjà pris.');
+                Http::redirect('/parametres');
+            }
+            $upd['login'] = $login;
+            $msgs[] = 'Identifiant modifié : utilise « ' . $login . ' » à la prochaine connexion.';
+        }
+        Db::update('players', $upd, 'id = ?', [$u['id']]);
+        Http::flash('ok', $msgs ? implode(' ', $msgs) : 'Paramètres enregistrés.');
+        Http::redirect('/parametres');
     }
 
     public static function players(): void

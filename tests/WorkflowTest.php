@@ -44,27 +44,24 @@ Db::update('game_years', ['host_id' => $ids['Tom']], 'id = ?', [$y1]);
 
 // --- déclarations
 $M = $ids['Matt']; $L = $ids['Léa']; $T = $ids['Tom']; $I = $ids['Inès']; $S = $ids['Sam'];
-[$e1, $err] = Entries::create($y1, $L, 'relation', ['status' => 'couple', 'partner' => 'Alex'], $L);
-check('relation créée en attente', $e1 !== null && Entries::find($e1)['status'] === 'pending');
-[$e2] = Entries::create($y1, $L, 'step', ['step' => 'move_in'], $L);
-[, $err] = Entries::create($y1, $L, 'step', ['step' => 'inconnue'], $L);
+[$e1, $err] = Entries::create($y1, $L, 'relation', ['status' => 'couple', 'partner' => 'Alex']);
+check('relation effective dès l\'envoi (sans validation admin)', $e1 !== null && Entries::find($e1)['status'] === 'approved');
+[$e2] = Entries::create($y1, $L, 'step', ['step' => 'move_in']);
+[, $err] = Entries::create($y1, $L, 'step', ['step' => 'inconnue']);
 check('étape inconnue refusée', $err !== null);
-[$eb] = Entries::create($y1, $I, 'bluff', ['fake_partner' => 'Zoé'], $I);
-[, $err] = Entries::create($y1, $I, 'bluff', ['fake_partner' => 'Autre'], $I);
+[$eb] = Entries::create($y1, $I, 'bluff', ['fake_partner' => 'Zoé']);
+[, $err] = Entries::create($y1, $I, 'bluff', ['fake_partner' => 'Autre']);
 check('un seul bluff par an et par joueur', $err !== null);
-[$ea] = Entries::create($y1, $S, 'absence', ['reason' => 'Examen'], $S);
-[$et] = Entries::create($y1, $T, 'attempt', ['kind' => 'app'], $M, true);
-check('saisie directe par l\'admin : validée', Entries::find($et)['status'] === 'approved');
-check('refus sans motif impossible', Entries::decide($e1, 'rejected', '', $M) !== null);
-check('un joueur retire sa déclaration en attente', Entries::withdraw($e2, $L) && Entries::find($e2) === null);
-[$e2] = Entries::create($y1, $L, 'step', ['step' => 'move_in'], $L);
+[$ea] = Entries::create($y1, $S, 'absence', ['reason' => 'Examen']);
+[$et] = Entries::create($y1, $T, 'attempt', ['kind' => 'other', 'detail' => 'Club de randonnée']);
+check('tentative « autre » avec description', $et !== null && str_contains(Entries::describe(Entries::find($et)), 'Club de randonnée'));
+[, $err] = Entries::create($y1, $M, 'attempt', ['kind' => 'other']);
+check('tentative « autre » sans description refusée', $err !== null);
+[$em] = Entries::create($y1, $M, 'attempt', ['kind' => 'app']);
+check('tentative classique sans description acceptée', $em !== null && Entries::withdraw($em, $M));
+check('un joueur retire sa déclaration tant que la soirée n\'a pas commencé', Entries::withdraw($e2, $L) && Entries::find($e2) === null);
+[$e2] = Entries::create($y1, $L, 'step', ['step' => 'move_in']);
 check('on ne retire pas la déclaration d\'un autre', !Entries::withdraw($e1, $T));
-
-$c = YearService::compute($y1);
-check('déclarations en attente bloquent la clôture', (bool)array_filter($c['problems'], fn($p) => str_contains($p, 'en attente')));
-foreach ([$e1, $e2, $eb, $ea] as $e) {
-    check('validation ' . $e, Entries::decide($e, 'approved', null, $M) === null);
-}
 
 // --- soirée : présence, accusations, votes
 Soiree::setAttendance($y1, $M, 1, false, 'present', 0);

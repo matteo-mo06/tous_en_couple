@@ -33,3 +33,16 @@
       .then(function () { busy = false; });
   }, 5000);
 })();
+
+// Paramètres : choix du thème (automatique / clair / sombre), mémorisé dans ce navigateur.
+(function () {
+  var sel = document.getElementById('theme');
+  if (!sel) { return; }
+  try { sel.value = localStorage.getItem('tec_theme') || 'auto'; } catch (e) {}
+  sel.addEventListener('change', function () {
+    try {
+      if (sel.value === 'auto') { localStorage.removeItem('tec_theme'); document.documentElement.removeAttribute('data-theme'); }
+      else { localStorage.setItem('tec_theme', sel.value); document.documentElement.setAttribute('data-theme', sel.value); }
+    } catch (e) {}
+  });
+})();

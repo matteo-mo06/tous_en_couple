@@ -3,10 +3,9 @@
 <div class="grid">
   <div class="card">
     <h2>À traiter</h2>
-    <p class="hero"><?= (int)$pending ?></p>
-    <p>déclaration(s) en attente de validation</p>
-    <?php if ($nameRequests): ?><p><?= (int)$nameRequests ?> demande(s) de changement de nom · <a href="<?= e(url('/admin/joueurs')) ?>">voir</a></p><?php endif; ?>
-    <p><a class="btn primary" href="<?= e(url('/admin/entrees')) ?>">Ouvrir</a></p>
+    <p class="hero"><?= (int)$nameRequests ?></p>
+    <p>demande(s) de changement de nom</p>
+    <p><a class="btn primary" href="<?= e(url('/admin/joueurs')) ?>">Ouvrir</a></p>
   </div>
   <div class="card">
     <h2>Année en cours</h2>
@@ -20,11 +19,12 @@
   </div>
 </div>
 <div class="card">
-  <h2>Déroulé d'une année</h2>
+  <h2>Ton rôle</h2>
+  <p>L'administrateur porte la gestion du site, rien de plus : il ne voit ni ne valide les déclarations des joueurs, et n'a aucun accès anticipé aux statuts, ruptures ou bluffs. Tout se révèle à la soirée.</p>
+  <h3>Déroulé d'une année</h3>
   <ol>
-    <li>Toute l'année : valider les <a href="<?= e(url('/admin/entrees')) ?>">déclarations</a> des joueurs.</li>
     <li>Fixer la date et le lieu, désigner l'<a href="<?= e(url('/admin/annee')) ?>">hôte</a> (volontaire, sinon tirage).</li>
-    <li>Le jour J : ouvrir la soirée, noter les <a href="<?= e(url('/admin/soiree')) ?>">présences</a>, créer les prix.</li>
+    <li>Le jour J : ouvrir la soirée (ferme les déclarations), noter les <a href="<?= e(url('/admin/soiree')) ?>">présences</a>, créer les prix.</li>
     <li>Fin de soirée : désigner les gagnants des prix, puis <a href="<?= e(url('/admin/cloture')) ?>">clôturer</a> (aperçu puis confirmation).</li>
   </ol>
 </div>

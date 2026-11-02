@@ -132,3 +132,7 @@ details > :not(summary) { margin-top: 10px; }
   th, td { padding: 8px 6px; }
   .grid { grid-template-columns: 1fr; }
 }
+.who .name { color: var(--muted); text-decoration: none; }
+.who .name:hover { color: var(--text); }
+.who .gear { text-decoration: none; padding: 4px 6px; border-radius: 8px; line-height: 1; filter: grayscale(1); opacity: .75; }
+.who .gear:hover, .who .gear.on { opacity: 1; background: var(--accent-soft); }

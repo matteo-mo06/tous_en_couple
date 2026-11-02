@@ -34,7 +34,6 @@ final class AdminController
         $year = Years::current();
         Http::render('admin/dashboard', [
             'title' => 'Administration', 'year' => $year,
-            'pending' => (int)Db::val("SELECT COUNT(*) FROM entries WHERE status = 'pending'"),
             'nameRequests' => (int)Db::val("SELECT COUNT(*) FROM players WHERE pending_name IS NOT NULL AND pending_name <> ''"),
             'players' => count(Players::all(true)),
             'amendments' => $year ? count(Amendments::forYear((int)$year['id'])) : 0,
@@ -116,47 +115,6 @@ final class AdminController
             Http::flash($err ? 'error' : 'ok', $err ?: 'Mot de passe provisoire défini : le joueur devra en choisir un nouveau.');
         }
         Http::redirect('/admin/joueurs');
-    }
-
-    // ------------------------------------------------------------------ déclarations
-    public static function entries(): void
-    {
-        self::guard();
-        $year = Years::current();
-        $pending = Entries::pending();
-        $all = $year ? Entries::forYear((int)$year['id']) : [];
-        Http::render('admin/entries', [
-            'title' => 'Déclarations', 'year' => $year, 'pending' => $pending,
-            'done' => array_values(array_filter($all, fn($e) => $e['status'] !== 'pending')),
-            'players' => Players::all(true),
-        ]);
-    }
-
-    public static function decide(string $id): void
-    {
-        $me = self::guard(true);
-        $d = Http::post('decision') === 'approve' ? 'approved' : 'rejected';
-        $err = Entries::decide((int)$id, $d, Http::post('note'), (int)$me['id']);
-        Http::flash($err ? 'error' : 'ok', $err ?: ($d === 'approved' ? 'Validée.' : 'Refusée.'));
-        Http::redirect('/admin/entrees');
-    }
-
-    public static function createEntry(): void
-    {
-        $me = self::guard(true);
-        $year = Years::current();
-        if (!$year) {
-            Http::flash('error', 'Aucune année ouverte.');
-            Http::redirect('/admin/entrees');
-        }
-        $pid = (int)Http::post('player_id');
-        if (!Years::isParticipant((int)$year['id'], $pid)) {
-            Http::flash('error', 'Joueur inconnu.');
-            Http::redirect('/admin/entrees');
-        }
-        [$id, $err] = Entries::create((int)$year['id'], $pid, Http::post('type'), $_POST, (int)$me['id'], !empty($_POST['approve']));
-        Http::flash($err ? 'error' : 'ok', $err ?: 'Déclaration enregistrée.');
-        Http::redirect('/admin/entrees');
     }
 
     // ------------------------------------------------------------------ année
@@ -249,7 +207,7 @@ final class AdminController
                 $e['tally'] = Soiree::tally('absence', (int)$e['id'], (int)$e['player_id']);
                 $absences[] = $e;
             }
-            if ($e['type'] === 'breakup' && !empty($e['data']['good_terms_requested'])) {
+            if ($year['status'] === 'soiree' && $e['type'] === 'breakup' && !empty($e['data']['good_terms_requested'])) {
                 $e['tally'] = Soiree::tally('terms', (int)$e['id'], (int)$e['player_id']);
                 $terms[] = $e;
             }
@@ -317,6 +275,10 @@ final class AdminController
         if (!$year) {
             Http::redirect('/admin/annee');
         }
+        if ($year['status'] !== 'soiree') {
+            Http::flash('info', 'La clôture n\'est possible qu\'une fois la soirée ouverte : avant, les déclarations des joueurs restent confidentielles, y compris pour l\'administrateur.');
+            Http::redirect('/admin/annee');
+        }
         $c = YearService::compute((int)$year['id']);
         $next = null;
         if ($c['amendments']) {
@@ -330,6 +292,9 @@ final class AdminController
     {
         $me = self::guard(true);
         $year = Years::current();
+        if ($year && $year['status'] !== 'soiree') {
+            Http::redirect('/admin/cloture');
+        }
         if (!$year || Http::post('confirm') !== (string)$year['year']) {
             Http::flash('error', 'Tape l\'année pour confirmer la clôture.');
             Http::redirect('/admin/cloture');

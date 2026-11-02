@@ -13,6 +13,7 @@ $path = TEC\Http::path();
   <meta name="robots" content="noindex">
   <title><?= e($title) ?> — <?= e(TEC\Config::get('app.name')) ?></title>
   <link rel="stylesheet" href="<?= e(url('/css/app.css')) ?>">
+  <script src="<?= e(url('/js/theme.js')) ?>"></script>
 </head>
 <body>
 <header class="site">
@@ -28,7 +29,8 @@ $path = TEC\Http::path();
         <?php endif; ?>
       </nav>
       <div class="who">
-        <span class="name"><?= e($_user['name']) ?></span>
+        <a class="name" href="<?= e(url('/parametres')) ?>"><?= e($_user['name']) ?></a>
+        <a class="gear<?= $path === '/parametres' ? ' on' : '' ?>" href="<?= e(url('/parametres')) ?>" title="Paramètres" aria-label="Paramètres">⚙️</a>
         <form method="post" action="<?= e(url('/deconnexion')) ?>"><?= TEC\Csrf::field() ?><button class="btn small" type="submit">Déconnexion</button></form>
       </div>
     <?php endif; ?>
