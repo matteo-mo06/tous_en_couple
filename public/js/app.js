@@ -46,3 +46,9 @@
     } catch (e) {}
   });
 })();
+
+// Confirmation avant une action destructive : <form data-confirm="Message ?">
+document.addEventListener('submit', function (ev) {
+  var msg = ev.target.getAttribute && ev.target.getAttribute('data-confirm');
+  if (msg && !window.confirm(msg)) { ev.preventDefault(); }
+});

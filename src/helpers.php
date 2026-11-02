@@ -72,3 +72,27 @@ function icon(string $name, string $class = ''): string
 {
     return '<svg class="i' . ($class !== '' ? ' ' . e($class) : '') . '" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"/></svg>';
 }
+
+const FR_MONTHS = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+/** « mars 2027 » à partir de « 2027-03 ». */
+function fr_month(string $ym): string
+{
+    [$y, $m] = array_map('intval', explode('-', $ym) + [0, 0]);
+    return (FR_MONTHS[$m] ?? '?') . ' ' . $y;
+}
+
+/** « 12 mars » ou « 12 → 20 mars » (ou avec les deux mois si besoin), année en plus si $withYear. */
+function fr_period(string $start, ?string $end, bool $withYear = false): string
+{
+    $a = new DateTimeImmutable($start);
+    $fmt = fn(DateTimeImmutable $d, bool $month = true, bool $year = false) => (int)$d->format('j') . ($month ? ' ' . FR_MONTHS[(int)$d->format('n')] : '') . ($year ? ' ' . $d->format('Y') : '');
+    if (!$end || $end === $start) {
+        return $fmt($a, true, $withYear);
+    }
+    $b = new DateTimeImmutable($end);
+    if ($a->format('Y-m') === $b->format('Y-m')) {
+        return $fmt($a, false) . ' → ' . $fmt($b, true, $withYear);
+    }
+    return $fmt($a, true, $withYear && $a->format('Y') !== $b->format('Y')) . ' → ' . $fmt($b, true, $withYear);
+}

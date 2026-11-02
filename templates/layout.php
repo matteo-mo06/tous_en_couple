@@ -6,6 +6,8 @@ $nav = [
     '/soiree' => ['Soirée', 'sparkles'], '/amendements' => ['Amendements', 'scroll'],
 ];
 $path = TEC\Http::path();
+// Pages rattachées à un onglet du menu
+$section = str_starts_with($path, '/journal') ? '/moi' : (str_starts_with($path, '/rewind') ? '/historique' : $path);
 // Version = date de modification du fichier : le navigateur recharge dès qu'un fichier change.
 $asset = fn(string $f) => url($f) . '?v=' . (@filemtime(dirname(__DIR__) . '/public' . $f) ?: 0);
 ?><!doctype html>
@@ -29,7 +31,7 @@ $asset = fn(string $f) => url($f) . '?v=' . (@filemtime(dirname(__DIR__) . '/pub
       <label for="menu-toggle" class="menu-btn" aria-hidden="true"><?= icon('menu', 'open') ?><?= icon('x', 'close') ?></label>
       <nav class="main" aria-label="Navigation principale">
         <?php foreach ($nav as $href => [$label, $ico]): ?>
-          <a href="<?= e(url($href)) ?>" class="<?= ($path === $href || ($href !== '/' && str_starts_with($path, $href))) ? 'on' : '' ?>"><?= icon($ico) ?><span><?= e($label) ?></span></a>
+          <a href="<?= e(url($href)) ?>" class="<?= ($section === $href || ($href !== '/' && str_starts_with($section, $href))) ? 'on' : '' ?>"><?= icon($ico) ?><span><?= e($label) ?></span></a>
         <?php endforeach; ?>
         <?php if ($_user['role'] === 'admin'): ?>
           <a href="<?= e(url('/admin')) ?>" class="admin <?= str_starts_with($path, '/admin') ? 'on' : '' ?>"><?= icon('shield') ?><span>Admin</span></a>

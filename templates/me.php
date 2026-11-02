@@ -1,4 +1,5 @@
 <h1>Mon espace</h1>
+<?php require __DIR__ . '/partials/me_nav.php'; ?>
 <div class="grid top">
   <div class="card">
     <h2>Mon statut actuel</h2>

@@ -1,4 +1,5 @@
 <h1>Historique</h1>
+<?php require __DIR__ . '/partials/history_nav.php'; ?>
 <?php if (!$closed): ?>
   <div class="card"><p class="muted">Aucune année clôturée pour l'instant.</p></div>
 <?php else: ?>

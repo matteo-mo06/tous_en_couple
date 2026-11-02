@@ -75,6 +75,22 @@ foreach ($ids as $name => $pid) {
     echo "Déclarations ajoutées pour $name ($profile).\n";
 }
 
+// --- journal : quelques événements dans l'année, dont un privé
+$ev = [['crush', 'Crush sur un collègue', 'Rien de concret… pour l\'instant'], ['situationship', 'Situationship avec Alex', ''], ['date', 'Double date avec des amis', 'Resto + ciné'],
+    ['couple', 'Week-end à deux', ''], ['travel', 'Voyage à Lisbonne', 'Une semaine de soleil'], ['memory', 'Soirée mémorable', ''], ['breakup', 'Fin d\'une histoire courte', '']];
+foreach ($ids as $name => $pid) {
+    if (TEC\Db::val('SELECT COUNT(*) FROM journal WHERE player_id = ?', [$pid])) {
+        continue;
+    }
+    foreach (array_rand($ev, 3) as $k) {
+        [$kind, $title, $note] = $ev[$k];
+        $start = date('Y-m-d', strtotime('-' . random_int(10, 300) . ' days'));
+        $end = random_int(0, 2) === 0 ? date('Y-m-d', strtotime($start . ' +' . random_int(2, 9) . ' days')) : '';
+        TEC\Repo\Journal::create($pid, $yid, ['kind' => $kind, 'title' => $title, 'note' => $note, 'start_date' => $start, 'end_date' => $end, 'shared' => random_int(0, 4) ? 1 : 0]);
+    }
+    echo "Journal ajouté pour $name.\n";
+}
+
 if (!in_array('--cloturer', $argv, true)) {
     echo "Terminé. Ajoute --cloturer pour simuler aussi la soirée et la clôture.\n";
     exit(0);
