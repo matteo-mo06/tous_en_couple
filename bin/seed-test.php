@@ -41,34 +41,38 @@ foreach (['Indy', 'Narciso', 'Romane', 'Cali'] as $name) {
     echo "Créé : $name ($login / test-test)\n";
 }
 
-// --- déclarations aléatoires (une seule fois par joueur)
+// --- déclarations : les 4 profils sont répartis au hasard entre les joueurs, pour que la simulation montre
+// des situations variées (couple, étape de vie, tentative, bluff, parfois une absence) sans cas absurdes.
 $partners = ['Léa', 'Tom', 'Sacha', 'Jade', 'Noé', 'Maya', 'Eliott', 'Lina'];
+shuffle($partners);
 $fakes = ['Zoé', 'Camille', 'Hugo', 'Alix'];
 $details = ['Club de randonnée', 'Cours de danse', 'Soirée jeux de société', 'Atelier poterie'];
+$profiles = ['couple_step', 'couple', 'single_bluff', 'single_attempt'];
+shuffle($profiles);
+$i = 0;
 foreach ($ids as $name => $pid) {
     if (Entries::forPlayer($yid, $pid)) {
         continue;
     }
-    $couple = random_int(0, 1) === 1;
-    if ($couple) {
-        Entries::create($yid, $pid, 'relation', ['status' => 'couple', 'partner' => $rand($partners), 'far' => random_int(0, 4) === 0]);
-        if (random_int(0, 1)) {
-            Entries::create($yid, $pid, 'step', ['step' => $rand(array_keys(Entries::STEPS)), 'date' => date('Y-m-d')]);
+    $profile = $profiles[$i++ % count($profiles)];
+    if (str_starts_with($profile, 'couple')) {
+        Entries::create($yid, $pid, 'relation', ['status' => 'couple', 'partner' => array_pop($partners)]);
+        if ($profile === 'couple_step') {
+            Entries::create($yid, $pid, 'step', ['step' => $rand(['move_in', 'buy', 'engaged']), 'date' => date('Y-m-d')]);
         }
     } else {
         Entries::create($yid, $pid, 'relation', ['status' => 'single']);
-        if (random_int(0, 1)) {
+        if ($profile === 'single_bluff') {
+            Entries::create($yid, $pid, 'bluff', ['fake_partner' => $rand($fakes)]);
+        } else {
             $k = $rand(array_keys(Entries::ATTEMPTS));
             Entries::create($yid, $pid, 'attempt', ['kind' => $k, 'detail' => $k === 'other' ? $rand($details) : '']);
-        }
-        if (random_int(0, 2) === 0) {
-            Entries::create($yid, $pid, 'bluff', ['fake_partner' => $rand($fakes)]);
+            if (random_int(0, 2) === 0) {
+                Entries::create($yid, $pid, 'absence', ['reason' => $rand(['Examen le même jour', 'Voyage déjà réservé', 'Mariage dans la famille'])]);
+            }
         }
     }
-    if (random_int(0, 4) === 0) {
-        Entries::create($yid, $pid, 'absence', ['reason' => $rand(['Examen le même jour', 'Voyage déjà réservé', 'Mariage dans la famille'])]);
-    }
-    echo "Déclarations aléatoires ajoutées pour $name.\n";
+    echo "Déclarations ajoutées pour $name ($profile).\n";
 }
 
 if (!in_array('--cloturer', $argv, true)) {
@@ -85,9 +89,9 @@ foreach (Db::all("SELECT player_id FROM entries WHERE year_id = ? AND type = 'ab
 }
 $present = [];
 foreach ($all as $pid) {
-    $isPresent = isset($absentWithReason[$pid]) ? false : random_int(0, 9) > 0;
+    $isPresent = !isset($absentWithReason[$pid]);
     $present[$pid] = $isPresent;
-    Soiree::setAttendance($yid, $pid, $isPresent ? 1 : 0, $isPresent && random_int(0, 6) === 0, 'present', random_int(0, 3));
+    Soiree::setAttendance($yid, $pid, $isPresent ? 1 : 0, $isPresent && random_int(0, 7) === 0, 'present', random_int(0, 3));
 }
 $host = $rand(array_keys(array_filter($present)));
 Db::update('game_years', ['meeting_date' => $year['year'] . '-07-24', 'meeting_place' => 'Chez ' . Players::find($host)['name'], 'host_id' => $host, 'status' => 'soiree'], 'id = ?', [$yid]);
@@ -101,7 +105,7 @@ foreach (Db::all("SELECT player_id FROM entries WHERE year_id = ? AND type = 'bl
 foreach (Db::all("SELECT id, player_id FROM entries WHERE year_id = ? AND type = 'absence'", [$yid]) as $r) {
     foreach ($all as $v) {
         if ($v !== (int)$r['player_id']) {
-            Soiree::vote('absence', (int)$r['id'], $v, random_int(0, 3) ? 'yes' : 'no');
+            Soiree::vote('absence', (int)$r['id'], $v, random_int(0, 4) ? 'yes' : 'no');
         }
     }
 }
