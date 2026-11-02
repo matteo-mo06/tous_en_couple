@@ -4,8 +4,12 @@ $kinds = TEC\Repo\Journal::KINDS;
 $colorOf = fn($e) => $kinds[$e['kind']][2] ?? 8;
 $mini = false;
 $dayUrl = fn($d) => url('/journal?mois=' . $cal['month'] . '&jour=' . $d . '#form');
-$selected = $edit ? $edit['start_date'] : $day;
-$prefill = $edit ?: ['kind' => 'date', 'title' => '', 'note' => '', 'start_date' => $day ?: (date('Y-m') === $cal['month'] ? date('Y-m-d') : $cal['month'] . '-01'), 'end_date' => '', 'shared' => 1];
+$eventUrl = fn($e) => TEC\Repo\Journal::canEdit($e, $me) ? url('/journal?modifier=' . (int)$e['id'] . '#form') : null;
+$editId = $edit ? (int)$edit['id'] : 0;
+$prefill = $edit ?: ['kind' => 'date', 'title' => '', 'note' => '', 'start_date' => $day, 'end_date' => $dayEnd, 'shared' => 1];
+$startVal = $prefill['start_date'] ?: (date('Y-m') === $cal['month'] ? date('Y-m-d') : $cal['month'] . '-01');
+$selStart = $startVal; $selEnd = $prefill['end_date'] ?: '';
+$periode = (bool)$selEnd || TEC\Http::get('mode') === 'periode';
 ?>
 <h1>Mon espace</h1>
 <?php require __DIR__ . '/partials/me_nav.php'; ?>
@@ -15,12 +19,13 @@ $prefill = $edit ?: ['kind' => 'date', 'title' => '', 'note' => '', 'start_date'
   <div>
     <div class="card">
       <div class="cal-bar">
-        <a class="btn small" href="<?= e(url('/journal?mois=' . $cal['prev'])) ?>" aria-label="Mois précédent"><?= icon('chev-left') ?></a>
+        <a class="btn small" data-nav href="<?= e(url('/journal?mois=' . $cal['prev'] . ($edit ? '&modifier=' . (int)$edit['id'] : ''))) ?>" aria-label="Mois précédent"><?= icon('chev-left') ?></a>
         <h2><?= e(fr_month($cal['month'])) ?></h2>
-        <a class="btn small" href="<?= e(url('/journal?mois=' . $cal['next'])) ?>" aria-label="Mois suivant"><?= icon('chev-right') ?></a>
-        <?php if ($cal['month'] !== date('Y-m')): ?><a class="btn small" href="<?= e(url('/journal')) ?>">Aujourd'hui</a><?php endif; ?>
+        <a class="btn small" data-nav href="<?= e(url('/journal?mois=' . $cal['next'] . ($edit ? '&modifier=' . (int)$edit['id'] : ''))) ?>" aria-label="Mois suivant"><?= icon('chev-right') ?></a>
+        <?php if ($cal['month'] !== date('Y-m')): ?><a class="btn small" data-nav href="<?= e(url('/journal' . ($edit ? '?modifier=' . (int)$edit['id'] : ''))) ?>">Aujourd'hui</a><?php endif; ?>
       </div>
       <?php require __DIR__ . '/partials/calendar.php'; ?>
+      <p class="selection small" id="selection" aria-live="polite"></p>
       <div class="legend">
         <?php foreach ($kinds as $k => [$label, $ico, $c]): ?><span class="lg"><i class="dot c<?= $c ?>"></i><?= e($label) ?></span><?php endforeach; ?>
       </div>
@@ -62,15 +67,25 @@ $prefill = $edit ?: ['kind' => 'date', 'title' => '', 'note' => '', 'start_date'
     <?php if (!$year): ?>
       <p class="muted">Aucune année ouverte pour l'instant.</p>
     <?php else: ?>
-    <form method="post" action="<?= e(url($edit ? '/journal/' . (int)$edit['id'] : '/journal')) ?>">
+    <form method="post" id="jform" data-edit="<?= $edit ? 1 : 0 ?>" action="<?= e(url($edit ? '/journal/' . (int)$edit['id'] : '/journal')) ?>">
       <?= TEC\Csrf::field() ?>
       <label for="j_kind">Type</label>
       <select id="j_kind" name="kind"><?php foreach ($kinds as $k => [$label]): ?><option value="<?= e($k) ?>" <?= $prefill['kind'] === $k ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
       <label for="j_title">Titre</label>
       <input type="text" id="j_title" name="title" maxlength="120" required value="<?= e($prefill['title']) ?>" placeholder="Ex. : double date avec Léa et Tom">
-      <div class="two">
-        <div><label for="j_start">Date (ou début)</label><input type="date" id="j_start" name="start_date" required value="<?= e($prefill['start_date']) ?>"></div>
-        <div><label for="j_end">Fin (si c'est une période)</label><input type="date" id="j_end" name="end_date" value="<?= e($prefill['end_date']) ?>"></div>
+      <div class="range-box">
+        <label>Quand ?</label>
+        <div class="seg" role="radiogroup" aria-label="Date ou période">
+          <label><input type="radio" name="mode" value="date" id="mode_d" <?= $periode ? '' : 'checked' ?>><?= icon('calendar') ?>Date</label>
+          <label><input type="radio" name="mode" value="periode" id="mode_p" <?= $periode ? 'checked' : '' ?>><?= icon('clock') ?>Période</label>
+        </div>
+        <div class="two">
+          <div><label class="when-date" for="j_start">Date</label><label class="when-period" for="j_start">Du</label>
+            <input type="date" id="j_start" name="start_date" required value="<?= e($startVal) ?>"></div>
+          <div class="when-period"><label for="j_end">Au</label><input type="date" id="j_end" name="end_date" value="<?= e($prefill['end_date']) ?>"></div>
+        </div>
+        <p class="small muted when-date">Clique sur un jour du calendrier pour choisir la date.</p>
+        <p class="small muted when-period">Clique sur un premier jour du calendrier, puis sur un second : s'il est avant, il devient le début ; après, la fin.</p>
       </div>
       <label for="j_note">Note (facultatif)</label>
       <textarea id="j_note" name="note" maxlength="1000"><?= e($prefill['note']) ?></textarea>

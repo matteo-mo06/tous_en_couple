@@ -45,7 +45,11 @@ final class Journal
         if (!self::validDate($start)) {
             return [null, 'La date de début est invalide.'];
         }
-        $end = $s('end_date');
+        $mode = $s('mode');           // « date » | « periode » (absent : on suit les champs)
+        $end = $mode === 'date' ? '' : $s('end_date');
+        if ($mode === 'periode' && $end === '') {
+            return [null, 'Période : indique aussi le dernier jour (deuxième clic dans le calendrier).'];
+        }
         if ($end !== '') {
             if (!self::validDate($end)) {
                 return [null, 'La date de fin est invalide.'];

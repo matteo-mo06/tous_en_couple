@@ -34,13 +34,15 @@ final class JournalController
                 $month = self::validMonth(substr($e['start_date'], 0, 7)) ? substr($e['start_date'], 0, 7) : $month;
             }
         }
+        $end = Http::get('fin');
+        $end = preg_match('/^\d{4}-\d{2}-\d{2}$/', $end) && strtotime($end) ? $end : '';
         $events = Journal::forPlayer($uid);
         $cal = Calendar::month($month, $events);
         $monthStart = $cal['month'] . '-01';
         $monthEnd = date('Y-m-t', strtotime($monthStart));
         $inMonth = array_values(array_filter($events, fn($e) => $e['start_date'] <= $monthEnd && ($e['end_date'] ?: $e['start_date']) >= $monthStart));
         Http::render('journal', [
-            'title' => 'Mon journal', 'cal' => $cal, 'inMonth' => $inMonth, 'edit' => $edit, 'day' => $day,
+            'title' => 'Mon journal', 'cal' => $cal, 'inMonth' => $inMonth, 'edit' => $edit, 'day' => $day, 'dayEnd' => $end,
             'year' => Years::current(), 'me' => $uid,
         ]);
     }

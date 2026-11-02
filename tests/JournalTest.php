@@ -60,4 +60,10 @@ check('calendrier : une période couvre chaque jour', array_column($withEvents, 
 check('calendrier : semaines complètes du lundi au dimanche', count($flat) % 7 === 0 && date('N', strtotime($flat[0]['date'])) === '1');
 check('mois suivant/précédent', $cal['prev'] === '2027-02' && $cal['next'] === '2027-04');
 check('période lisible', fr_period('2027-03-10', '2027-03-12') === '10 → 12 mars' && fr_period('2027-03-30', '2027-04-02') === '30 mars → 2 avril' && fr_period('2027-03-10', null) === '10 mars');
+[, $err] = Journal::create($ann, $y, ['kind' => 'travel', 'title' => 'x', 'start_date' => '2027-05-01', 'mode' => 'periode']);
+check('mode période sans fin refusé', $err !== null);
+[$ep] = Journal::create($ann, $y, ['kind' => 'travel', 'title' => 'Vacances', 'start_date' => '2027-05-01', 'end_date' => '2027-05-09', 'mode' => 'periode']);
+check('mode période enregistre la fin', Journal::find($ep)['end_date'] === '2027-05-09');
+[$ed] = Journal::create($ann, $y, ['kind' => 'travel', 'title' => 'Un jour', 'start_date' => '2027-05-01', 'end_date' => '2027-05-09', 'mode' => 'date']);
+check('mode date ignore la fin', Journal::find($ed)['end_date'] === null);
 @unlink($tmp);
